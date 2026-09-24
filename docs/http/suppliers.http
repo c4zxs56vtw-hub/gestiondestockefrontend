@@ -1,0 +1,40 @@
+@baseUrl = http://localhost:8080/api/v1
+@supplierId = 7
+
+### Lister les fournisseurs
+GET {{baseUrl}}/suppliers?q=tech&page=0&size=20&sort=name,asc
+Accept: application/json
+
+### Créer un fournisseur
+POST {{baseUrl}}/suppliers
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Tech Distribution",
+  "contactName": "Amina Nguema",
+  "email": "contact@tech-distribution.example",
+  "phone": "+237690000000",
+  "address": "Douala, Cameroun"
+}
+
+### Consulter un fournisseur et ses coordonnées
+GET {{baseUrl}}/suppliers/{{supplierId}}
+Accept: application/json
+
+### Modifier un fournisseur
+PUT {{baseUrl}}/suppliers/{{supplierId}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Tech Distribution SARL",
+  "contactName": "Amina Nguema",
+  "email": "contact@tech-distribution.example",
+  "phone": "+237690000000",
+  "address": "Bonanjo, Douala, Cameroun"
+}
+
+### Supprimer un fournisseur — échoue s’il est référencé
+DELETE {{baseUrl}}/suppliers/{{supplierId}}
+Accept: application/json

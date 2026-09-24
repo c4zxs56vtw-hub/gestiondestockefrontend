@@ -1,0 +1,627 @@
+openapi: 3.1.0
+info:
+  title: StockPilot API
+  version: 1.0.0
+  description: |
+    API de gestion de stock pour l'application StockPilot.
+    Les montants sont en XAF (chaînes numériques entières).
+    Les dates sont en ISO 8601 UTC.
+    Les listes sont paginées (page 0-indexé).
+    Les erreurs suivent RFC 9457 (application/problem+json).
+  contact:
+    name: StockPilot Dev
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Backend local Spring Boot
+tags:
+  - name: Dashboard
+  - name: Products
+  - name: Categories
+  - name: Suppliers
+  - name: StockMovements
+  - name: Inventory
+
+paths:
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Données tableau de bord
+      operationId: getDashboard
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Données du tableau de bord
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DashboardResponse' }
+
+  /products:
+    get:
+      tags: [Products]
+      summary: Liste paginée des produits
+      operationId: listProducts
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+        - { name: sort, in: query, schema: { type: string, default: 'name,asc' } }
+        - { name: categoryId, in: query, schema: { type: integer } }
+        - { name: supplierId, in: query, schema: { type: integer } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ProductStatus' } }
+        - { name: stockStatus, in: query, schema: { $ref: '#/components/schemas/StockStatus' } }
+      responses:
+        '200':
+          description: Page de produits
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductPage' }
+    post:
+      tags: [Products]
+      summary: Créer un produit
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateProductRequest' }
+      responses:
+        '201':
+          description: Produit créé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '409':
+          description: SKU déjà existant
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Détail d'un produit
+      operationId: getProduct
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '404':
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+    put:
+      tags: [Products]
+      summary: Modifier un produit
+      operationId: updateProduct
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateProductRequest' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '404':
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+        '409':
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /products/{id}/archive:
+    patch:
+      tags: [Products]
+      summary: Archiver un produit (stock doit être à 0)
+      operationId: archiveProduct
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '409':
+          description: Stock non nul ou produit déjà archivé
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /categories:
+    get:
+      tags: [Categories]
+      summary: Liste paginée des catégories
+      operationId: listCategories
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+        - { name: sort, in: query, schema: { type: string, default: 'name,asc' } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CategoryPage' }
+    post:
+      tags: [Categories]
+      summary: Créer une catégorie
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCategoryRequest' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+
+  /categories/{id}:
+    get:
+      tags: [Categories]
+      operationId: getCategory
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '404':
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+    put:
+      tags: [Categories]
+      operationId: updateCategory
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCategoryRequest' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+    delete:
+      tags: [Categories]
+      operationId: deleteCategory
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204': { description: Supprimée }
+        '409':
+          description: Catégorie utilisée par des produits actifs
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /suppliers:
+    get:
+      tags: [Suppliers]
+      operationId: listSuppliers
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+        - { name: sort, in: query, schema: { type: string, default: 'name,asc' } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SupplierPage' }
+    post:
+      tags: [Suppliers]
+      operationId: createSupplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSupplierRequest' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Supplier' }
+
+  /suppliers/{id}:
+    get:
+      tags: [Suppliers]
+      operationId: getSupplier
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Supplier' }
+    put:
+      tags: [Suppliers]
+      operationId: updateSupplier
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSupplierRequest' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Supplier' }
+    delete:
+      tags: [Suppliers]
+      operationId: deleteSupplier
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204': { description: Supprimé }
+        '409':
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /stock-movements:
+    get:
+      tags: [StockMovements]
+      operationId: listStockMovements
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+        - { name: sort, in: query, schema: { type: string, default: 'createdAt,desc' } }
+        - { name: productId, in: query, schema: { type: integer } }
+        - { name: type, in: query, schema: { $ref: '#/components/schemas/MovementType' } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockMovementPage' }
+    post:
+      tags: [StockMovements]
+      operationId: createStockMovement
+      summary: Créer un mouvement (IN ou OUT). Requiert Idempotency-Key.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateMovementRequest' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockMovement' }
+        '409':
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /stock-movements/{id}:
+    get:
+      tags: [StockMovements]
+      operationId: getStockMovement
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockMovement' }
+        '404':
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /inventory/adjustments:
+    post:
+      tags: [Inventory]
+      operationId: createAdjustment
+      summary: Ajustement de stock. Requiert expectedStockVersion (contrôle de concurrence).
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAdjustmentRequest' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockMovement' }
+        '409':
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+components:
+  schemas:
+    # Enumerations
+    Unit:
+      type: string
+      enum: [PIECE, BOX, CARTON]
+    ProductStatus:
+      type: string
+      enum: [ACTIVE, ARCHIVED]
+    StockStatus:
+      type: string
+      enum: [IN_STOCK, LOW_STOCK, OUT_OF_STOCK]
+    MovementType:
+      type: string
+      enum: [IN, OUT, ADJUSTMENT]
+
+    # References
+    CategoryRef:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+    SupplierRef:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+    ProductRef:
+      type: object
+      required: [id, sku, name, unit]
+      properties:
+        id: { type: integer }
+        sku: { type: string }
+        name: { type: string }
+        unit: { $ref: '#/components/schemas/Unit' }
+
+    # Full models
+    Product:
+      type: object
+      required: [id, sku, name, category, unit, purchasePrice, salePrice, quantityInStock, minimumStock, status, stockStatus, stockVersion, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        sku: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        category: { $ref: '#/components/schemas/CategoryRef' }
+        supplier: { $ref: '#/components/schemas/SupplierRef', nullable: true }
+        unit: { $ref: '#/components/schemas/Unit' }
+        purchasePrice: { type: string, description: 'Montant entier XAF en chaîne' }
+        salePrice: { type: string, description: 'Montant entier XAF en chaîne' }
+        quantityInStock: { type: integer, minimum: 0 }
+        minimumStock: { type: integer, minimum: 0 }
+        status: { $ref: '#/components/schemas/ProductStatus' }
+        stockStatus: { $ref: '#/components/schemas/StockStatus' }
+        stockVersion: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Category:
+      type: object
+      required: [id, name, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Supplier:
+      type: object
+      required: [id, name, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        contactName: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        phone: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    StockMovement:
+      type: object
+      required: [id, product, type, quantityBefore, quantityDelta, quantityAfter, createdAt]
+      properties:
+        id: { type: integer }
+        product: { $ref: '#/components/schemas/ProductRef' }
+        type: { $ref: '#/components/schemas/MovementType' }
+        quantityBefore: { type: integer }
+        quantityDelta: { type: integer }
+        quantityAfter: { type: integer }
+        supplier: { $ref: '#/components/schemas/SupplierRef', nullable: true }
+        reference: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    # Requests
+    CreateProductRequest:
+      type: object
+      required: [sku, name, categoryId, unit, purchasePrice, salePrice, minimumStock]
+      properties:
+        sku: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        categoryId: { type: integer }
+        supplierId: { type: integer, nullable: true }
+        unit: { $ref: '#/components/schemas/Unit' }
+        purchasePrice: { type: string }
+        salePrice: { type: string }
+        minimumStock: { type: integer, minimum: 0 }
+    UpdateProductRequest:
+      allOf:
+        - { $ref: '#/components/schemas/CreateProductRequest' }
+
+    CreateCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+        description: { type: string, nullable: true, maxLength: 500 }
+
+    CreateSupplierRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 150 }
+        contactName: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        phone: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+
+    CreateMovementRequest:
+      type: object
+      required: [productId, type, quantity]
+      properties:
+        productId: { type: integer }
+        type: { type: string, enum: [IN, OUT] }
+        quantity: { type: integer, minimum: 1 }
+        supplierId: { type: integer, nullable: true }
+        reference: { type: string, nullable: true, maxLength: 100 }
+        note: { type: string, nullable: true, maxLength: 500 }
+
+    CreateAdjustmentRequest:
+      type: object
+      required: [productId, countedQuantity, expectedStockVersion, reason]
+      properties:
+        productId: { type: integer }
+        countedQuantity: { type: integer, minimum: 0 }
+        expectedStockVersion: { type: integer }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+
+    # Pagination
+    ProductPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/Product' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer }
+        totalPages: { type: integer }
+    CategoryPage:
+      type: object
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/Category' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer }
+        totalPages: { type: integer }
+    SupplierPage:
+      type: object
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/Supplier' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer }
+        totalPages: { type: integer }
+    StockMovementPage:
+      type: object
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/StockMovement' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer }
+        totalPages: { type: integer }
+
+    # Dashboard
+    DashboardResponse:
+      type: object
+      required: [currency, period, counts, stockValue, movementCounts, dailySeries, recentMovements]
+      properties:
+        currency: { type: string, example: XAF }
+        period:
+          type: object
+          properties:
+            from: { type: string, format: date-time }
+            to: { type: string, format: date-time }
+            timezone: { type: string, example: 'Africa/Douala' }
+        counts:
+          type: object
+          properties:
+            activeProducts: { type: integer }
+            lowStockProducts: { type: integer }
+            outOfStockProducts: { type: integer }
+        stockValue: { type: string, description: 'Valeur totale du stock en XAF' }
+        movementCounts:
+          type: object
+          properties:
+            in: { type: integer }
+            out: { type: integer }
+        dailySeries:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              in: { type: integer }
+              out: { type: integer }
+              adjustments: { type: integer }
+        recentMovements:
+          type: array
+          items: { $ref: '#/components/schemas/StockMovement' }
+
+    # Errors
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field: { type: string }
+        message: { type: string }
+    ProblemDetails:
+      type: object
+      required: [type, title, status, detail, instance, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code:
+          type: string
+          description: Code d'erreur stable pour le frontend
+          enum:
+            - VALIDATION_ERROR
+            - RESOURCE_NOT_FOUND
+            - SKU_ALREADY_EXISTS
+            - INSUFFICIENT_STOCK
+            - PRODUCT_ARCHIVED
+            - PRODUCT_HAS_STOCK
+            - PRODUCT_IDENTITY_LOCKED
+            - CATEGORY_IN_USE
+            - SUPPLIER_IN_USE
+            - STOCK_VERSION_CONFLICT
+            - NO_STOCK_CHANGE
+            - IDEMPOTENCY_KEY_REUSED
+            - CONFLICT
+            - INTERNAL_ERROR
+            - NETWORK_ERROR
+        fieldErrors:
+          type: array
+          items: { $ref: '#/components/schemas/FieldError' }

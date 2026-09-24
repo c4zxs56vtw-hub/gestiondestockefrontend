@@ -1,0 +1,62 @@
+@baseUrl = http://localhost:8080/api/v1
+@productId = 42
+@movementId = 1001
+@inKey = 550e8400-e29b-41d4-a716-446655440000
+@outKey = 550e8400-e29b-41d4-a716-446655440001
+
+### Historique global paginé
+GET {{baseUrl}}/stock-movements?page=0&size=20&sort=createdAt,desc
+Accept: application/json
+
+### Historique filtré par produit, type et période
+GET {{baseUrl}}/stock-movements?productId={{productId}}&type=IN&from=2026-09-01T00:00:00Z&to=2026-09-24T00:00:00Z&page=0&size=20&sort=createdAt,desc
+Accept: application/json
+
+### Créer une entrée
+POST {{baseUrl}}/stock-movements
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: {{inKey}}
+
+{
+  "productId": {{productId}},
+  "type": "IN",
+  "quantity": 12,
+  "supplierId": 7,
+  "reference": "BL-2026-0091",
+  "note": null
+}
+
+### Créer une sortie — commentaire obligatoire
+POST {{baseUrl}}/stock-movements
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: {{outKey}}
+
+{
+  "productId": {{productId}},
+  "type": "OUT",
+  "quantity": 2,
+  "supplierId": null,
+  "reference": "CMD-2026-0142",
+  "note": "Préparation commande client"
+}
+
+### Rejouer exactement l’entrée — doit retourner la réponse initiale sans doubler le stock
+POST {{baseUrl}}/stock-movements
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: {{inKey}}
+
+{
+  "productId": {{productId}},
+  "type": "IN",
+  "quantity": 12,
+  "supplierId": 7,
+  "reference": "BL-2026-0091",
+  "note": null
+}
+
+### Consulter un mouvement validé
+GET {{baseUrl}}/stock-movements/{{movementId}}
+Accept: application/json

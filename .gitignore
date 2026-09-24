@@ -1,0 +1,40 @@
+﻿
+# Dependances installees
+node_modules/
+
+# Builds et caches
+dist/
+dist-ssr/
+.vite/
+.cache/
+*.tsbuildinfo
+
+# Rapports de tests generes
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Configuration locale des editeurs
+.idea/
+.vscode/
+*.iml
+
+# Variables d'environnement locales
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Fichiers du systeme
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Configuration locale de deploiement
+.vercel/
+.netlify/
+!.env.api
+!.env.mock

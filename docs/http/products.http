@@ -1,0 +1,70 @@
+@baseUrl = http://localhost:8080/api/v1
+@productId = 42
+
+### Lister les produits actifs
+GET {{baseUrl}}/products?page=0&size=20&sort=name,asc
+Accept: application/json
+
+### Rechercher et filtrer les produits
+GET {{baseUrl}}/products?q=clavier&categoryId=2&supplierId=7&status=ACTIVE&stockStatus=LOW_STOCK&page=0&size=20&sort=sku,asc
+Accept: application/json
+
+### Lister les produits archivés
+GET {{baseUrl}}/products?status=ARCHIVED&page=0&size=20&sort=updatedAt,desc
+Accept: application/json
+
+### Consulter un produit
+GET {{baseUrl}}/products/{{productId}}
+Accept: application/json
+
+### Créer un produit — stock initial à zéro
+POST {{baseUrl}}/products
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sku": "KB-2048",
+  "name": "Clavier mécanique K2",
+  "description": null,
+  "categoryId": 2,
+  "supplierId": 7,
+  "unit": "PIECE",
+  "purchasePrice": "84000",
+  "salePrice": "110000",
+  "minimumStock": 10
+}
+
+### Modifier les métadonnées — jamais le stock
+PUT {{baseUrl}}/products/{{productId}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sku": "KB-2048",
+  "name": "Clavier mécanique K2 révisé",
+  "description": "Clavier professionnel",
+  "categoryId": 2,
+  "supplierId": 7,
+  "unit": "PIECE",
+  "purchasePrice": "85000",
+  "salePrice": "112000",
+  "minimumStock": 12
+}
+
+### Archiver un produit — autorisé seulement avec stock nul
+PATCH {{baseUrl}}/products/{{productId}}/status
+Content-Type: application/json
+Accept: application/json
+
+{
+  "status": "ARCHIVED"
+}
+
+### Réactiver un produit
+PATCH {{baseUrl}}/products/{{productId}}/status
+Content-Type: application/json
+Accept: application/json
+
+{
+  "status": "ACTIVE"
+}

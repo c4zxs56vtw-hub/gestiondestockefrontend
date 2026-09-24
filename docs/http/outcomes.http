@@ -1,0 +1,116 @@
+@baseUrl = http://localhost:8080/api/v1
+@productId = 42
+@archivedProductId = 99
+@usedCategoryId = 2
+@usedSupplierId = 7
+@conflictKey = 550e8400-e29b-41d4-a716-446655440010
+
+### SUCCÈS — création d’un mouvement d’entrée
+# Attendu : 201 Created, ressource créée et header Location éventuel.
+POST {{baseUrl}}/stock-movements
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: {{conflictKey}}
+
+{
+  "productId": {{productId}},
+  "type": "IN",
+  "quantity": 5,
+  "supplierId": 7,
+  "reference": "BL-SUCCESS-001",
+  "note": null
+}
+
+### SUCCÈS — lecture d’une page vide
+# Attendu : 200 OK avec content vide et totaux réels.
+GET {{baseUrl}}/products?q=produit-inexistant&page=0&size=20&sort=name,asc
+Accept: application/json
+
+### CONFLIT — sortie supérieure au stock
+# Attendu : 409, code INSUFFICIENT_STOCK.
+POST {{baseUrl}}/stock-movements
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: 550e8400-e29b-41d4-a716-446655440011
+
+{
+  "productId": {{productId}},
+  "type": "OUT",
+  "quantity": 999999,
+  "supplierId": null,
+  "reference": null,
+  "note": "Test de stock insuffisant"
+}
+
+### CONFLIT — mouvement sur produit archivé
+# Attendu : 409, code PRODUCT_ARCHIVED.
+POST {{baseUrl}}/stock-movements
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: 550e8400-e29b-41d4-a716-446655440012
+
+{
+  "productId": {{archivedProductId}},
+  "type": "IN",
+  "quantity": 1,
+  "supplierId": 7,
+  "reference": "BL-ARCHIVED-001",
+  "note": null
+}
+
+### CONFLIT — catégorie utilisée
+# Attendu : 409, code CATEGORY_IN_USE, aucune suppression.
+DELETE {{baseUrl}}/categories/{{usedCategoryId}}
+Accept: application/json
+
+### CONFLIT — fournisseur référencé
+# Attendu : 409, code SUPPLIER_IN_USE, aucune suppression.
+DELETE {{baseUrl}}/suppliers/{{usedSupplierId}}
+Accept: application/json
+
+### CONFLIT — version de stock obsolète
+# Attendu : 409, code STOCK_VERSION_CONFLICT.
+POST {{baseUrl}}/stock-adjustments
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: 550e8400-e29b-41d4-a716-446655440013
+
+{
+  "productId": {{productId}},
+  "countedQuantity": 17,
+  "expectedStockVersion": 0,
+  "reason": "Test de conflit de version"
+}
+
+### CONFLIT — même clé d’idempotence avec une requête différente
+# Réutiliser une clé déjà utilisée, en changeant quantity.
+# Attendu : 409, code IDEMPOTENCY_KEY_REUSED.
+POST {{baseUrl}}/stock-movements
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: {{conflictKey}}
+
+{
+  "productId": {{productId}},
+  "type": "IN",
+  "quantity": 99,
+  "supplierId": 7,
+  "reference": "BL-DIFFERENT-001",
+  "note": null
+}
+
+### VALIDATION — sortie sans commentaire
+# Attendu : 400, code VALIDATION_ERROR, fieldErrors contenant note.
+POST {{baseUrl}}/stock-movements
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: 550e8400-e29b-41d4-a716-446655440014
+
+{
+  "productId": {{productId}},
+  "type": "OUT",
+  "quantity": 1,
+  "supplierId": null,
+  "reference": null,
+  "note": null
+}

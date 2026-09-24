@@ -1,0 +1,29 @@
+@baseUrl = http://localhost:8080/api/v1
+@productId = 42
+@adjustmentKey = 550e8400-e29b-41d4-a716-446655440002
+
+### Créer un ajustement d’inventaire
+POST {{baseUrl}}/stock-adjustments
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: {{adjustmentKey}}
+
+{
+  "productId": {{productId}},
+  "countedQuantity": 17,
+  "expectedStockVersion": 8,
+  "reason": "Écart constaté lors du comptage du 23/09"
+}
+
+### Rejouer exactement l’ajustement — doit retourner la réponse initiale
+POST {{baseUrl}}/stock-adjustments
+Content-Type: application/json
+Accept: application/json
+Idempotency-Key: {{adjustmentKey}}
+
+{
+  "productId": {{productId}},
+  "countedQuantity": 17,
+  "expectedStockVersion": 8,
+  "reason": "Écart constaté lors du comptage du 23/09"
+}

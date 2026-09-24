@@ -1,0 +1,34 @@
+@baseUrl = http://localhost:8080/api/v1
+@categoryId = 2
+
+### Lister les catégories
+GET {{baseUrl}}/categories?q=périph&page=0&size=20&sort=name,asc
+Accept: application/json
+
+### Créer une catégorie
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Périphériques",
+  "description": "Claviers, souris et accessoires de saisie"
+}
+
+### Consulter une catégorie
+GET {{baseUrl}}/categories/{{categoryId}}
+Accept: application/json
+
+### Modifier une catégorie
+PUT {{baseUrl}}/categories/{{categoryId}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Périphériques informatiques",
+  "description": "Claviers, souris et accessoires"
+}
+
+### Supprimer une catégorie — échoue si elle est utilisée
+DELETE {{baseUrl}}/categories/{{categoryId}}
+Accept: application/json
