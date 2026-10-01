@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Package, Tag, Truck, ArrowLeftRight,
-  ClipboardList, Bell, ChevronLeft, ChevronRight, Code2,
+  ClipboardList, Bell, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/shared/presentation/components/ui/cn'
 import { MockBadge } from '@/shared/presentation/components/MockBadge'
@@ -15,10 +15,6 @@ const NAV_ITEMS = [
   { to: '/stock-movements', icon: ArrowLeftRight, label: 'Mouvements' },
   { to: '/inventory', icon: ClipboardList, label: 'Inventaire' },
   { to: '/alerts', icon: Bell, label: 'Alertes' },
-] as const
-
-const DEV_ITEMS = [
-  { to: '/developer/api', icon: Code2, label: 'Documentation API' },
 ] as const
 
 interface SidebarProps {
@@ -78,17 +74,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </p>
         )}
         {NAV_ITEMS.map((item) => (
-          <NavItem key={item.to} {...item} />
-        ))}
-
-        <div className="my-3 border-t border-sidebar-border" />
-
-        {!collapsed && (
-          <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-widest text-sidebar-text-label mb-1">
-            Développement
-          </p>
-        )}
-        {DEV_ITEMS.map((item) => (
           <NavItem key={item.to} {...item} />
         ))}
       </nav>

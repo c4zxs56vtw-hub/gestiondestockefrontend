@@ -7,7 +7,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --mode api",
     "dev:mock": "vite --mode mock",
     "dev:api": "vite --mode api",
     "lint": "eslint src --max-warnings=0",
