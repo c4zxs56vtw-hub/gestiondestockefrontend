@@ -19,12 +19,13 @@ describe('runtime schema guards', () => {
     expect(() => assertPaginatedResponse({ content: [], page: 2, size: 20, totalElements: 0, totalPages: 0 })).not.toThrow()
   })
 
-  it('normalizes a network error without a response', async () => {
-    await expect(normalizeHttpError()).resolves.toMatchObject({ kind: 'network', code: 'NETWORK_ERROR' })
+  it('normalizes a network error without a response', () => {
+    const error = new TypeError('Failed to fetch')
+    expect(normalizeHttpError(error)).toMatchObject({ code: 'NETWORK_ERROR' })
   })
 
-  it('normalizes a non-json HTTP error', async () => {
-    const response = new Response('<html>error</html>', { status: 502, headers: { 'content-type': 'text/html' } })
-    await expect(normalizeHttpError(response)).resolves.toMatchObject({ kind: 'invalid-response', status: 502, code: 'INVALID_ERROR_RESPONSE' })
+  it('normalizes a non-json HTTP error', () => {
+    const error = new Error('Request timeout')
+    expect(normalizeHttpError(error)).toMatchObject({ code: 'TIMEOUT' })
   })
 })

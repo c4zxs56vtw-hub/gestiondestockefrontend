@@ -20,10 +20,6 @@ playwright/.cache/
 .vscode/
 *.iml
 
-# Variables d'environnement locales
-.env
-.env.*
-!.env.example
 
 # Logs
 *.log
